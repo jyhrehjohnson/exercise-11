@@ -1,0 +1,121 @@
+---
+title: "challenge_1"
+author: "Jyhreh Johnson"
+date: "4/14/2022"
+output: html_document
+---
+
+##Challenge 1
+```{r}
+library(tidyverse)
+library(tidy)
+library(mosaic)
+library(car)
+library(broom)
+library(ggplot2)
+library(infer)
+library(dplyr)
+library(skimr)
+library(ggpubr)
+```
+
+1. Using the {tidyverse} read_csv() function, load the “AVONETdataset1.csv” dataset from this URL as a “tibble” named d.
+```{r}
+f <- "https://raw.githubusercontent.com/difiore/ada-2022-datasets/main/AVONETdataset1.csv"
+d <- read_csv(f, col_names = TRUE)
+head(d)
+```
+
+2. Winnow the dataset to include only the following variables: Species1, Family1, Order1, Beak.Length_Culmen, Beak.Width, Beak.Depth, Tarsus.Length, Wing.Length, Tail.Length, Mass, Habitat, Migration, Trophic.Level, Trophic.Niche, Min.Latitude, Max.Latitude, Centroid.Latitude, Primary.Lifestyle, ** and Range.Size
+```{r}
+d <- d %>%
+  select(Species1, 
+         Family1, 
+         Order1, 
+         Beak.Length_Culmen, 
+         Beak.Width, Beak.Depth, 
+         Tarsus.Length, 
+         Wing.Length, 
+         Tail.Length, 
+         Mass, 
+         Habitat, 
+         Migration, 
+         Trophic.Level, 
+         Trophic.Niche, 
+         Primary.Lifestyle, 
+         Min.Latitude, 
+         Max.Latitude, 
+         Centroid.Latitude, 
+         Range.Size)
+```
+
+3. Do a bit of exploratory data analysis with this dataset, e.g., using the {skimr} package. Which of the variables are categorical and which are numeric?
+```{r}
+skim(d)
+```
+
+4. Make boxplots of log(Mass) in relation to Trophic.Level and Migration behavior type. For each plot, drop from the visualization all species records where the categorical variable of interest is missing from the dataset. Also, you will want to convert the variable Migration (which is scored as a number: “1”, “2”, or “3”) from class numeric to either being classified as a factor or as a character (string) variable.
+```{r}
+#Take out the N/A's
+d <- na.omit(d) 
+
+#Plot Trophic Level and Migration in correlation to body mass (Mass)
+p1 <- ggplot(data = d, aes(x = Trophic.Level, y = log(Mass))) + geom_boxplot()
+p1
+
+p2 <- ggplot(data = d, aes(x = as.factor(Migration), y = log(Mass))) + geom_boxplot()
+p2
+```
+
+5. Run linear models using the lm() function to look at the relationship between log(Mass) and Trophic.Level and between log(Mass) and Migration.
+```{r}
+#Create linear models 
+d <- d %>% mutate(Migration = as.factor(Migration), logMass = log(Mass)) #make the factor migration a new column in the original data
+mod1 <- lm(logMass ~ Trophic.Level, data = d)
+mod1
+
+mod2 <- lm(logMass ~ Migration, data = d)
+mod2
+
+#Summarize the models 
+summary(mod1) 
+summary(mod2)
+```
+
+6. Examine the output of the resultant linear models. Is log(Mass)associated with either Trophic.Level or Migration category? That is, in the global test of significance, is the F statistic large enough to reject the null hypothesis of an F value of zero?
+```{r}
+mt <- aov(data = d, logMass ~ Trophic.Level)
+summary(mt)
+
+mt2 <- aov(data = d, logMass ~ Migration)
+summary(mt2)
+```
+
+7. Given the regression coefficients returned for your Migration model, which Migration categor(ies) are different than the reference level? What level is the reference level? Relevel and assess differences among the remaining pair of Migration categories.
+```{r}
+```
+
+8. Conduct a post-hoc Tukey Honest Significant Differences test to also evaluate which Migration categories differ “significantly” from one another (see Module 20).
+```{r}
+```
+
+9. Use a permutation approach to inference to generate a null distribution of F statistic values for the model of log(Mass) in relation to Trophic.Level and calculate a p value for your original F statistic. You can do this either by programming your own permutation test (e.g., by shuffling values for the predictor or response variable among observations and calculating an F statistic for each replicate) or by using the {infer} workflow and setting calculate(stat="F").
+```{r}
+og_f <- aov(log(Mass) ~ Trophic.Level, data = d) %>%  
+  tidy() %>% #create a nice table of summary results
+  filter(term=="Trophic.Level") #filter summary results 
+
+og_f
+
+perm_f <- d %>% specify(logMass ~ Trophic.Level)%>%
+  hypothesize(null = "independence")%>%
+  generate(reps = 1000, type = "permute")%>%
+  calculate(stat = "F")
+
+visualize(perm_f) + shade_p_value(obs_stat = og_f$statistic, direction = "greater")
+
+p_value <- perm_f %>% get_p_value(obs_stat = og_f$statistic, direction = "greater")
+p_value
+
+og_f$p.value
+```

@@ -1,0 +1,157 @@
+---
+title: 'Challenge #2'
+author: "Jyhreh Johnson"
+date: "4/19/2022"
+output: html_document
+---
+
+##Challenge 2
+```{r}
+library(tidyverse)
+library(tidy)
+library(mosaic)
+library(car)
+library(broom)
+library(ggplot2)
+library(infer)
+library(dplyr)
+library(skimr)
+library(ggpubr)
+```
+
+Using the {tidyverse} read_csv() function, load the “AVONETdataset1.csv” dataset from this URL as a “tibble” named d.
+```{r}
+f2 <- "https://raw.githubusercontent.com/difiore/ada-2022-datasets/main/AVONETdataset1.csv"
+d2 <- read_csv(f, col_names = TRUE)
+head(d2)
+```
+
+Winnow the dataset to include only the following variables: Species1, Family1, Order1, Beak.Length_Culmen, Beak.Width, Beak.Depth, Tarsus.Length, Wing.Length, Tail.Length, Mass, Habitat, Migration, Trophic.Level, Trophic.Niche, Min.Latitude, Max.Latitude, Centroid.Latitude, Primary.Lifestyle, ** and Range.Size
+```{r}
+d2 <- d2 %>%
+  select(Species1, 
+         Family1, 
+         Order1, 
+         Beak.Length_Culmen, 
+         Beak.Width, Beak.Depth, 
+         Tarsus.Length, 
+         Wing.Length, 
+         Tail.Length, 
+         Mass, 
+         Habitat, 
+         Migration, 
+         Trophic.Level, 
+         Trophic.Niche, 
+         Primary.Lifestyle, 
+         Min.Latitude, 
+         Max.Latitude, 
+         Centroid.Latitude, 
+         Range.Size)
+```
+
+Create the following two new variables and add them to AVONET dataset:
+Relative beak length, which you should calculate as the residual of log(Beak.Length_Culmen) on log(Mass).
+```{r}
+d2 <- d2 %>% mutate(logBL = log(Beak.Length_Culmen), logMass = log(Mass))
+blm <- lm(data = d2, logBL ~ logMass)
+summary(blm)
+blm$residuals
+```
+
+Relative tarsus length, which you should calculate as the residual of log(Tarsus.Length) on log(Mass).
+```{r}
+d2 <- d2 %>% mutate(logTL = log(Tarsus.Length), logMass = log(Mass))
+tlm <- lm(data = d2, logTL ~ logMass)
+summary(tlm)
+tlm$residuals
+head(tlm$residuals)
+```
+
+Make a boxplot or violin plot of your new relative tarsus length variable in relation to Primary.Lifestyle 
+```{r}
+d2 <- d2 %>%
+  mutate(rel_beak_len = blm$residuals) %>%
+  mutate(rel_tar_len = tlm$residuals)
+```
+
+```{r}
+t_lifestyle <- ggplot(d2, aes(x = rel_tar_len, y = Primary.Lifestyle)) + geom_boxplot()
+t_lifestyle
+```
+our new relative beak length variable in relation to Trophic.Niche
+```{r}
+bk_lifestyle <- ggplot(d2, aes(x = rel_beak_len, y = Trophic.Niche)) + geom_boxplot()
+bk_lifestyle
+```
+
+Run an ANOVA analyses to look at the association between geographic range size and the variable Migration. You should first drop those observations for which Migration is not scored and also look at the distribution of the variable Range.Size to decide whether and how it might need to be transformed. Based on the global model, is range size associated with form of migration? How much of the variance in your measure of range size is associated with Migration behavior style?
+```{r}
+hist(d2$Range.Size)
+```
+```{r}
+d2 <- d2 %>% mutate(Migration = as.factor(Migration))
+geo_mig <- aov(data = d2, log(Range.Size) ~ Migration)
+summary(geo_mig)
+```
+
+Given the regression coefficients returned in output of the model, which Migration categor(ies) are different than the reference level? What level is the reference level? Relevel and assess differences among the remaining pair of Migration categories. 
+```{r}
+d2 <- d2 %>% mutate(Migration = relevel(Migration, ref = 3))
+```
+
+Also conduct a post-hoc Tukey Honest Significant Differences test to also evaluate which Migration categories differ “significantly” from one another (see Module 20).
+```{r}
+```
+
+Winnow your original data to just consider birds from the Infraorder “Passeriformes” (song birds).
+```{r}
+passer <- d2 %>% filter(Order1 == "Passeriformes")
+```
+Run separate one-factor ANOVA analyses to look at the association between [1] relative beak length and Primary.Lifestyle and between [2] relative beak length and Trophic.Level. In doing so…
+
+ANOVA analysis
+```{r}
+beak_len_pl <- aov(data = passer, rel_beak_len ~ Primary.Lifestyle) 
+summary(beak_len_pl)
+```
+```{r}
+beak_len_tl <- aov(data = passer, rel_beak_len ~ Trophic.Level)
+summary(beak_len_tl)
+```
+
+Make boxplots of response variable by each predictor and by the combination of predictors.
+```{r}
+beak_prime <- ggplot(d2, aes(x = rel_beak_len, y = Primary.Lifestyle )) + geom_boxplot()
+beak_prime
+```
+
+```{r}
+beak_troph <- ggplot(d2, aes(x = rel_beak_len, y = Trophic.Level)) + geom_boxplot()
+beak_troph
+```
+
+Run linear models for each predictor separately and interpret the model output.
+```{r}
+```
+
+Run a two-factor model to look at the association between relative beak length and both Primary.Lifestyle and Trophic.Level among the passariforms. Based on the model output, what would you conclude about how relative beak length is related to these two variables?
+```{r}
+```
+
+Finally, run an additional two-way model with the same dataset and predictors, but adding the possibility of an interaction term. To do this, you should modify your model formula using the colon operator (:) to specify the interaction, e.g., relative beak length ~ Primary.Lifestyle + Trophic.Level + Primary.Lifestyle:Trophic.Level. Based on the model output, what would you now conclude about how relative beak length is related to these two variables?
+```{r}
+p3 <- ggplot(data=d2, aes(x = rel_beak_len, y = Primary.Lifestyle)) + geom_boxplot() +
+  facet_wrap(~Trophic.Level, ncol=1) +
+  xlab("Primary Lifestyle") + ylab(" Relative Beak Length")
+# and let's plot what the data look like
+# p <- p + geom_point() # uncommenting this shows all points
+p3 <- p3 + stat_summary(data=d2, aes(x = rel_beak_len, y = Primary.Lifestyle),
+  fun = base::mean,
+  # make sure we use {base} version of mean
+  color = "darkgreen", geom = "point", shape = 8, size = 6)
+p3
+```
+
+Use the interaction.plot() function to visualize the interaction between Primary.Lifestyle and Trophic.Level (see Module 20).
+```{r}
+```
