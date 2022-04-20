@@ -115,7 +115,7 @@ summary(geo_mig)
 **Answer:** Yes\
 
 **Question:** How much of the variance in your measure of range size is associated with Migration behavior style?\
-**Answer:** I am not sure what you mean by this question?
+**Answer:** I am not sure what you mean by this question?\ #come back to
 
 • Given the regression coefficients returned in output of the model, which Migration categor(ies) are different than the reference level? What level is the reference level? Relevel and assess differences among the remaining pair of Migration categories. 
 ```{r}
@@ -217,4 +217,15 @@ interaction.plot(
   fun = base::mean,
   ylab = "Relative Beak Length"
 )
+```
+
+## Additional Steps?
+In the exercise above, we really did not do any checking with this dataset to see if the data meet the primary assumptions for standard linear regression and ANOVA, which are that variables/residuals within each grouping level are roughly normally distributed and have roughly equal variances. Sample sizes within each grouping level should also be roughly equal. As noted in Module 20, a general rule of thumb for “equal” variances is to compare the largest and smallest within-grouping level standard deviations and, if this value is less than 2, then it is often reasonable to presume the assumption may not be violated.
+
+Use this approach to see whether variances in across groups in your various models (e.g., for relative beak length ~ trophic level) are roughly equal. Additionally, do a visual check of whether observations and model residuals within groups look to be normally distributed.
+```{r}
+#not sure if this is what you meant? I don't think this is right lol. 
+par(mfrow = c(2, 2))
+plot(tfm)
+plot(tfm2)
 ```
